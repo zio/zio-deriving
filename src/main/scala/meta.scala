@@ -1,4 +1,4 @@
-package shapely
+package zio.deriving
 
 import scala.annotation.Annotation
 

@@ -64,7 +64,7 @@ object ShapelyCodeGen {
       }.mkString(" with ")
       s"  final case class _$i[A, $tparams](value: A$i) extends $parents { override def index: Int = ${i - 1} }"
     }
-    s"""package shapely
+    s"""package zio.deriving
        |
        |import scala.annotation._
        |
@@ -111,11 +111,11 @@ object ShapelyCodeGen {
          |    def from(s: SealedTrait$i[A, $tparams_]): A = s.value
          |  }""".stripMargin
     }
-    s"""package shapely
+    s"""package zio.deriving
          |
          |import deriving.Mirror
          |
-         |private[shapely] trait ShapelyCompat { this: Shapely.type =>
+         |private[deriving] trait ShapelyCompat { this: Shapely.type =>
          |
          |  implicit def caseclass0[A <: Product](implicit A: Mirror.ProductOf[A], ev: A.MirroredElemTypes =:= EmptyTuple): Shapely[A, CaseClass0[A]] = new Shapely[A, CaseClass0[A]] {
          |    def to(a: A): CaseClass0[A] = CaseClass0[A]()
@@ -213,9 +213,9 @@ object ShapelyCodeGen {
          |  }"""
     }
 
-    s"""package shapely
+    s"""package zio.deriving
        |
-       |private[shapely] trait DerivableGenerated[F[_]] {
+       |private[deriving] trait DerivableGenerated[F[_]] {
        |  implicit def caseclass1[A, A1](implicit X: XFunctor[F], F1: Lazy[F[A1]]): F[CaseClass1[A, A1]] =
        |     X.xmap(F1.value)(t => CaseClass1(t), c => c._1)
        |

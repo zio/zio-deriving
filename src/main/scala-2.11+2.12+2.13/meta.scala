@@ -1,14 +1,14 @@
-package shapely
+package zio.deriving
 
 import scala.language.experimental.macros
 
-private[shapely] trait MetaCompat {
+private[deriving] trait MetaCompat {
   this: Meta.type =>
 
   implicit def gen[A]: Meta[A] = macro MetaMacros.gen[A]
 }
 
-private[shapely] object MetaMacros {
+private[deriving] object MetaMacros {
   import scala.reflect.macros.blackbox.Context
 
   def gen[A: c.WeakTypeTag](c: Context): c.Expr[Meta[A]] = {
@@ -47,7 +47,7 @@ private[shapely] object MetaMacros {
       }
 
     c.Expr[Meta[A]] (
-      q"""new _root_.shapely.Meta[$A] {
+      q"""new _root_.zio.deriving.Meta[$A] {
           override def name = ${name}
           override def annotations = ${annotations}
           override def fieldNames = ${fieldNames}

@@ -1,6 +1,6 @@
-package shapelytest
+package zio.derivingtest
 
-import shapely._
+import zio.deriving._
 
 object ShapelyTestExamples {
   sealed trait Gaz

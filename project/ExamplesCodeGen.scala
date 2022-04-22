@@ -16,7 +16,7 @@ object ExamplesCodeGen {
     }
     s"""package wheels.enums
        |
-       |import shapely._
+       |import zio.deriving._
        |
        |private[enums] trait GeneratedEnums {
        |${enums.mkString("\n\n")}

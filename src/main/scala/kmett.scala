@@ -12,7 +12,7 @@
 // initialisation problems during implicit resolution for mutually referential
 // (e.g. recursive) data types. Implementors should consider caching parameters
 // in lazy vals.
-package shapely
+package zio.deriving
 
 // Mixin for typeclass companions to activate `derived` instances for case
 // classes and sealed traits using the DAX mechanism.

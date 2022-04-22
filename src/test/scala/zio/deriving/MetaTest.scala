@@ -1,7 +1,7 @@
-package shapelytest
+package zio.derivingtest
 
 import scala.annotation._
-import shapely.Meta
+import zio.deriving.Meta
 
 object MetaTestExamples {
   final case class field(name: String) extends Annotation
