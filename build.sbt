@@ -1,5 +1,5 @@
-organization := "com.fommil"
-name := "shapely"
+organization := "dev.zio"
+name := "zio-deriving"
 
 // there's nothing stopping 2.10 being supported except the need to rewrite all
 // the macros using the 2.10 API... and capping the codegen to an arity of 22.
