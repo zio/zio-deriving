@@ -1,4 +1,12 @@
-Shapely is a Scala library for typeclass derivation with the design goals of:
+# ZIO Deriving
+
+| Project Stage | CI | Release | Snapshot | Discord |
+| --- | --- | --- | --- | --- |
+| [![Project stage][Badge-Stage]][Link-Stage-Page] | ![CI][Badge-CI] | [![Release Artifacts][Badge-SonatypeReleases]][Link-SonatypeReleases] | [![Snapshot Artifacts][Badge-SonatypeSnapshots]][Link-SonatypeSnapshots] | [![Badge-Discord]][Link-Discord] |
+
+# Summary
+
+ZIO Deriving is a Scala library for typeclass derivation with the design goals of:
 
 - **compatibility** source compatible with both Scala 2 and Scala 3.
 - **simple** the implementation has minimal macros and avoids type-level programming.
@@ -141,11 +149,11 @@ object Complex {
 }
 ```
 
-`shapely` is an alternative approach; the remainder of this document will explain how to create derivation rules for typeclasses using shapely.
+`zio-deriving` is an alternative approach; the remainder of this document will explain how to create derivation rules for typeclasses using zio-deriving.
 
 ## Divide and Conquer
 
-`shapely` defines some lawful user-facing typeclasses that abstract over typeclasses 🤯
+`zio-deriving` defines some lawful user-facing typeclasses that abstract over typeclasses 🤯
 
 ```scala
 trait XFunctor[F[_]] {
@@ -174,7 +182,7 @@ The laws are:
 - associativity (align): `align(align(fa, fb), fc) == align(fa, align(fb, fc))`
 - associativity (decide): `decide(decide(fa, fb), fc) == decide(fa, decide(fb, fc))`
 
-`shapely` provides conveniences, to help implementing `XFunctor`
+`zio-deriving` provides conveniences, to help implementing `XFunctor`
 
 ```scala
 trait Covariant[F[_]] extends XFunctor[F] {
@@ -276,9 +284,9 @@ Homework:
 
 ## Lower Level
 
-`shapely` is just a bunch of generated code. Typeclass authors can use that mechanism directly if they can't write lawful AC/DC instances.
+`zio-deriving` is just a bunch of generated code. Typeclass authors can use that mechanism directly if they can't write lawful AC/DC instances.
 
-`shapely` data types mirror cases classes and sealed traits of all shapes (hence the name!)
+`zio-deriving` data types mirror cases classes and sealed traits of all shapes (hence the name!)
 
 ```scala
 sealed trait Shape[A]
@@ -308,7 +316,7 @@ object SealedTrait {
 }
 ```
 
-The conversion between regular data types and the shapely shapes is handled by a typeclass that has a macro that automatically creates instances of a
+The conversion between regular data types and the zio-deriving shapes is handled by a typeclass that has a macro that automatically creates instances of a
 
 ```scala
 trait Shapely[A, B <: Shape[A]] {
@@ -317,7 +325,7 @@ trait Shapely[A, B <: Shape[A]] {
 }
 ```
 
-where `A` is your own case classes and sealed traits, `B` is a `shapely.Shape`.
+where `A` is your own case classes and sealed traits, `B` is a `zio-deriving.Shape`.
 
 The typeclass law is that roundtripping recovers an equal value
 
@@ -366,7 +374,7 @@ which we then need to convert into codegen rules. `project/ExamplesCodeGen.scala
     }
     s"""package wheels.enums
        |
-       |import shapely._
+       |import zio-deriving._
        |
        |private[enums] trait GeneratedEnums {
        |${enums.mkString("\n\n")}
@@ -409,10 +417,10 @@ trait Meta[A] {
 
 which is provided by a macro. A typical usecase for this is to implement an encoder or decoder.
 
-I rewrote `zio-json` to use shapely and this is how an `Encoder` is able to get the field names for case classes with annotations providing overrides
+I rewrote `zio-json` to use zio-deriving and this is how an `Encoder` is able to get the field names for case classes with annotations providing overrides
 
 ```scala
-abstract class CaseClassEncoder[A, CC <: shapely.CaseClass[A]](M: shapely.Meta[A]) extends Encoder[CC] {
+abstract class CaseClassEncoder[A, CC <: zio.deriving.CaseClass[A]](M: zio.deriving.Meta[A]) extends Encoder[CC] {
   val names: Array[String] = M.fieldAnnotations
     .zip(M.fieldNames)
     .map {
@@ -548,4 +556,14 @@ So when generating typeclasses, make sure to wrap the dependencies with `Lazy`. 
   ) = ...
 ```
 
-If you look at the actual definitions of the AC/DC typeclasses, you'll see that they are all by-name, to accomodate for this. Implementators may want to cache the values in a `lazy val`. Another design choice for shapely would be to use `Lazy` in the AC/DC API but it felt like pollution.
+If you look at the actual definitions of the AC/DC typeclasses, you'll see that they are all by-name, to accomodate for this. Implementators may want to cache the values in a `lazy val`. Another design choice for zio-deriving would be to use `Lazy` in the AC/DC API but it felt like pollution.
+
+[Badge-SonatypeReleases]: https://img.shields.io/nexus/r/https/oss.sonatype.org/dev.zio/zio-deriving_2.12.svg "Sonatype Releases"
+[Badge-SonatypeSnapshots]: https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-deriving_2.12.svg "Sonatype Snapshots"
+[Badge-Discord]: https://img.shields.io/discord/629491597070827530?logo=discord "chat on discord"
+[Badge-CI]: https://github.com/zio/zio-deriving/workflows/CI/badge.svg
+[Link-SonatypeReleases]: https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-deriving_2.12/ "Sonatype Releases"
+[Link-SonatypeSnapshots]: https://oss.sonatype.org/content/repositories/snapshots/dev/zio/zio-deriving_2.12/ "Sonatype Snapshots"
+[Link-Discord]: https://discord.gg/2ccFBr4 "Discord"
+[Badge-Stage]: https://img.shields.io/badge/Project%20Stage-Development-yellowgreen.svg
+[Link-Stage-Page]: https://github.com/zio/zio/wiki/Project-Stages
