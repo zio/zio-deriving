@@ -1,4 +1,4 @@
-package shapely
+package zio.deriving
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
@@ -11,6 +11,6 @@ object LazyMacros {
     import c.universe._
 
     val A = c.weakTypeOf[A]
-    q"""_root_.shapely.Lazy(_root_.scala.Predef.implicitly[$A])"""
+    q"""_root_.zio.deriving.Lazy(_root_.scala.Predef.implicitly[$A])"""
   }
 }

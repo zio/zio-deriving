@@ -1,4 +1,4 @@
-package shapely
+package zio.deriving
 
 // Workaround the lack of by-name implicit parameters in Scala 2.12 and lower by
 // using a `Lazy[A]` instead of `=> A` whilst also adding memoisation, giving a

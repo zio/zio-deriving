@@ -1,7 +1,7 @@
 // poor man's enum that works in Scala 2
 package wheels.enums
 
-import shapely.Shapely
+import zio.deriving.Shapely
 
 // sealed traits that have only case object members may derive one of these
 trait Enum[A] { self =>

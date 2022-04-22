@@ -1,5 +1,5 @@
-organization := "com.fommil"
-name := "shapely"
+organization := "dev.zio"
+name := "zio-deriving"
 
 // there's nothing stopping 2.10 being supported except the need to rewrite all
 // the macros using the 2.10 API... and capping the codegen to an arity of 22.
@@ -52,9 +52,9 @@ Compile / sourceManaged := {
 
 Compile / sourceGenerators += Def.task {
   val dir = (Compile / sourceManaged).value
-  val data = dir / "shapely" / "data.scala"
+  val data = dir / "zio"/ "deriving" / "data.scala"
   IO.write(data, ShapelyCodeGen.data)
-  val derivable = dir / "shapely" / "derivable.scala"
+  val derivable = dir / "zio" / "deriving" / "derivable.scala"
   IO.write(derivable, ShapelyCodeGen.derivable)
   Seq(data, derivable)
 }.taskValue
@@ -64,7 +64,7 @@ Compile / sourceGenerators += Def.task {
   if (major < 3) Nil
   else {
     val dir = (Compile / sourceManaged).value
-    val file = dir / "shapely" / "compat.scala"
+    val file = dir / "zio" / "deriving" / "compat.scala"
     IO.write(file, ShapelyCodeGen.compat)
     Seq(file)
   }

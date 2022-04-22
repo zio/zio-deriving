@@ -1,15 +1,15 @@
-package shapely
+package zio.deriving
 
 import scala.annotation._
 import scala.quoted._
 
-private[shapely] trait MetaCompat {
+private[deriving] trait MetaCompat {
   this: Meta.type =>
 
   implicit inline def gen[A]: Meta[A] = ${ MetaMacros.gen[A] }
 }
 
-private[shapely] object MetaMacros {
+private[deriving] object MetaMacros {
 
   def gen[A: Type](using Quotes): Expr[Meta[A]] = {
     import quotes.reflect._

@@ -1,8 +1,8 @@
-package shapelytest
+package zio.derivingtest
 
 import scala.math.Ordering
 import scala.annotation.tailrec
-import shapely._
+import zio.deriving._
 
 object KmettExamples {
 

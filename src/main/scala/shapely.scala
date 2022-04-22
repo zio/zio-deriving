@@ -1,4 +1,4 @@
-package shapely
+package zio.deriving
 
 // An isomorphism (up to primitive boxing and label names) between user-defined
 // data types and a Shape.
