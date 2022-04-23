@@ -1,6 +1,6 @@
 package zio.deriving
 
-import scala.language.experimental.macros
+//import scala.language.experimental.macros
 
 private[deriving] trait MetaCompat {
   this: Meta.type =>
