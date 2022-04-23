@@ -36,7 +36,8 @@ addCommandAlias(
   ";derivingNative/test" // `test` currently executes only compilation, see `nativeSettings` in `BuildHelper`
 )
 
-val zioVersion = "2.0.0-RC5"
+val zioVersion             = "2.0.0-RC5"
+val scalaCollectionsCompat = "2.7.0"
 
 // there's nothing stopping 2.10 being supported except the need to rewrite all
 // the macros using the 2.10 API... and capping the codegen to an arity of 22.

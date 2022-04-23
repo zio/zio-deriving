@@ -73,9 +73,8 @@ object ShapelyCodeGen {
        |sealed trait Shape[A]
        |sealed trait CaseClass[A] extends Shape[A] { def value(i: Int): Any }
        |sealed trait SealedTrait[A] extends Shape[A] { def value: A ; def index: Int }
-       |
-       |@nowarn
-       |final case class CaseClass0[A]() extends CaseClass[A] { def tuple: Unit = () ; override def value(i: Int): Any = throw new IllegalArgumentException }
+       |       
+       |final case class CaseClass0[A]() extends CaseClass[A] { def tuple(): Unit = () ; override def value(i: Int): Any = throw new IllegalArgumentException }
        |case object CaseClass0 { def untuple[A](): CaseClass0[A] = apply[A]() }
        |
        |object CaseClass {
@@ -193,7 +192,7 @@ object ShapelyCodeGen {
       val left          = s"""sealedtrait${i - 1}(X, D, $left_Fs)"""
       val left_tparams_ = (1 to i - 1).map(p => s"A$p").mkString(", ")
 
-      s"""  @scala.annotation.nowarn implicit def sealedtrait$i[A, $tparams](implicit X: XFunctor[F], D: Decide[F], $Fs): F[SealedTrait$i[A, $tparams_]] =
+      s"""  implicit def sealedtrait$i[A, $tparams](implicit X: XFunctor[F], D: Decide[F], $Fs): F[SealedTrait$i[A, $tparams_]] =
          |    X.xmap(D.decide($left, F${i}.value))(
          |      {
          |        case Left(v) => v.asInstanceOf[SealedTrait$i[A, $tparams_]]
