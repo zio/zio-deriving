@@ -58,7 +58,7 @@ lazy val deriving = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("deriving"))
   .settings(stdSettings("zio-deriving"))
   .settings(crossProjectSettings)
-  .settings(macroExpansionSettings)
+  .settings(macroDefinitionSettings)
   .settings(buildInfoSettings("zio.deriving"))
   .settings(
     Compile / sourceGenerators += Def.task {
