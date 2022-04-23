@@ -18,18 +18,14 @@ private[deriving] object MetaMacros {
     if (!A.typeSymbol.isClass)
       c.abort(c.enclosingPosition, s"Type ${A.typeSymbol} is not a class")
 
-    val sym = A.typeSymbol.asClass
-    val name = sym.name.decodedName.toString
+    val sym         = A.typeSymbol.asClass
+    val name        = sym.name.decodedName.toString
     val annotations = sym.annotations.map(a => c.untypecheck(a.tree))
 
     val fieldNames: Array[String] =
       if (!sym.isCaseClass) Array()
       else {
-        sym.primaryConstructor
-          .asMethod
-          .typeSignature
-          .paramLists
-          .flatten
+        sym.primaryConstructor.asMethod.typeSignature.paramLists.flatten
           .map(_.name.decodedName.toString.trim)
           .toArray
       }
@@ -37,16 +33,12 @@ private[deriving] object MetaMacros {
     val fieldAnnotations: Array[List[c.Tree]] =
       if (!sym.isCaseClass) Array()
       else {
-        sym.primaryConstructor
-          .asMethod
-          .typeSignature
-          .paramLists
-          .flatten
+        sym.primaryConstructor.asMethod.typeSignature.paramLists.flatten
           .map(_.annotations.map(a => c.untypecheck(a.tree)))
           .toArray
       }
 
-    c.Expr[Meta[A]] (
+    c.Expr[Meta[A]](
       q"""new _root_.zio.deriving.Meta[$A] {
           override def name = ${name}
           override def annotations = ${annotations}
