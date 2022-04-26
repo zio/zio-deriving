@@ -15,7 +15,7 @@ private[scala] object ValueOfMacros {
   def gen[A: c.WeakTypeTag](c: Context): c.Expr[A] = {
     import c.universe._
     val A = c.weakTypeOf[A]
-    val result = q"new _root_.scala.ValueOf[$A]($A)"
+    val result = q"new _root_.scala.ValueOf[$A](${A.termSymbol})"
     // println(result)
     // println(scala.util.Try(c.typecheck(result)))
     c.Expr[A](result)
