@@ -1,7 +1,6 @@
 package zio.deriving
 
 import zio.test._
-import scala.annotation.nowarn
 
 object ShapelyTestExamples {
   sealed trait Gaz
@@ -21,10 +20,13 @@ object ShapelyTestExamples {
   // a typeclass that doesn't do anything, but shows how Shapely can be used to
   // derived typeclasses from generated boilerplate.
   trait Nuthin[A] { self =>
-    @nowarn
-    def xmap[B](f: A => B, g: B => A): Nuthin[B] = self.asInstanceOf[Nuthin[B]]
+
+    def xmap[B](f: A => B, g: B => A): Nuthin[B] = {
+      val _ = (f, g)
+      self.asInstanceOf[Nuthin[B]]
+    }
   }
-  object Nuthin   {
+  object Nuthin {
     def derived[A, B](implicit S: Shapely[A, B], B: Nuthin[B]): Nuthin[A] = B.xmap(S.from, S.to)
     private def nuthin[A]                                                 = new Nuthin[A] {}
 

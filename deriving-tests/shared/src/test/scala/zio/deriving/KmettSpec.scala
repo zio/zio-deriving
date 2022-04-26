@@ -3,7 +3,6 @@ package zio.deriving
 import scala.math.Ordering
 import scala.annotation.tailrec
 import zio.test._
-import scala.annotation.nowarn
 
 object KmettSpec extends ZIOSpecDefault {
   import KmettExamples._
@@ -291,7 +290,7 @@ object KmettExamples {
   case class Tesseract(x: Double, y: Double, z: Double, t: Double) extends Dimension
 
   object Dimension {
-    @nowarn
+
     implicit val ordering: Ordering[Dimension] = {
       import OrderingOrphans._
       derived

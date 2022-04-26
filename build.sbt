@@ -25,11 +25,11 @@ addCommandAlias(
 
 addCommandAlias(
   "testJVM",
-  ";derivingJVM/test"
+  ";derivingJVM/test; derivingTestsJVM/test"
 )
 addCommandAlias(
   "testJS",
-  ";derivingJS/test"
+  ";derivingJS/test; derivingTestsJS/test"
 )
 addCommandAlias(
   "testNative",
@@ -39,11 +39,18 @@ addCommandAlias(
 val zioVersion             = "2.0.0-RC5"
 val scalaCollectionsCompat = "2.7.0"
 
+lazy val sourceGenerationSettings = Seq(
+  Compile / sourceManaged := {
+    val dir                  = (Compile / sourceManaged).value
+    val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
+    dir / s"scala-${major}.${minor}"
+  }
+)
 // there's nothing stopping 2.10 being supported except the need to rewrite all
 // the macros using the 2.10 API... and capping the codegen to an arity of 22.
 // ThisBuild / crossScalaVersions := List("3.1.1", "2.13.8", "2.12.15", "2.11.12")
 // ThisBuild / scalaVersion       := "2.13.8"
-lazy val root = project
+lazy val root                     = project
   .in(file("."))
   .settings(
     name           := "zio-deriving-root",
@@ -53,7 +60,9 @@ lazy val root = project
   .aggregate(
     derivingJS,
     derivingJVM,
-    derivingNative
+    derivingNative,
+    derivingTestsJS,
+    derivingTestsJVM
   )
 
 lazy val deriving = crossProject(JSPlatform, JVMPlatform, NativePlatform)
@@ -62,6 +71,7 @@ lazy val deriving = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(crossProjectSettings)
   .settings(macroDefinitionSettings)
   .settings(buildInfoSettings("zio.deriving"))
+  .settings(sourceGenerationSettings)
   .settings(
     Compile / sourceGenerators += Def.task {
       val dir       = (Compile / sourceManaged).value
@@ -80,12 +90,6 @@ lazy val deriving = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         IO.write(file, ShapelyCodeGen.compat)
         Seq(file)
       }
-    }.taskValue,
-    Test / sourceGenerators += Def.task {
-      val dir   = (Compile / sourceManaged).value
-      val enums = dir / "wheels" / "enums" / "GeneratedEnums.scala"
-      IO.write(enums, ExamplesCodeGen.enums)
-      Seq(enums)
     }.taskValue
   )
   .settings(testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")))
@@ -103,6 +107,36 @@ lazy val derivingJVM = deriving.jvm
 
 lazy val derivingNative = deriving.native
   .settings(nativeSettings)
+
+lazy val derivingTests = crossProject(JSPlatform, JVMPlatform)
+  .in(file("deriving-tests"))
+  .settings(stdSettings("zio-deriving-tests"))
+  .settings(crossProjectSettings)
+  .settings(macroExpansionSettings)
+  .settings(buildInfoSettings("zio.deriving.tests"))
+  .settings(sourceGenerationSettings)
+  .settings(
+    Compile / sourceGenerators += Def.task {
+      val dir   = (Compile / sourceManaged).value
+      val enums = dir / "wheels" / "enums" / "GeneratedEnums.scala"
+      IO.write(enums, ExamplesCodeGen.enums)
+      Seq(enums)
+    }.taskValue
+  )
+  .settings(testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")))
+  .enablePlugins(BuildInfoPlugin)
+  .dependsOn(deriving)
+  .settings(publish / skip := true)
+
+lazy val derivingTestsJS = derivingTests.js
+  .settings(jsSettings)
+  .settings(dottySettings)
+  .settings(libraryDependencies += "dev.zio" %%% "zio-test-sbt" % zioVersion % Test)
+
+lazy val derivingTestsJVM = derivingTests.jvm
+  .settings(dottySettings)
+  .settings(libraryDependencies += "dev.zio" %%% "zio-test-sbt" % zioVersion % Test)
+  .settings(scalaReflectTestSettings)
 
 // scalacOptions ++= Seq(
 //   "-deprecation",
@@ -143,10 +177,4 @@ lazy val derivingNative = deriving.native
 //     Seq(
 //       "org.scala-lang" % "scala-reflect"     % scalaVersion.value % "provided"
 //     )
-// }
-
-// Compile / sourceManaged := {
-//   val dir                  = (Compile / sourceManaged).value
-//   val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
-//   dir / s"scala-${major}.${minor}"
 // }
