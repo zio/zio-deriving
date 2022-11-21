@@ -76,3 +76,13 @@ Test / sourceGenerators += Def.task {
   IO.write(enums, ExamplesCodeGen.enums)
   Seq(enums)
 }.taskValue
+
+lazy val docs = project
+  .in(file("zio-deriving-docs"))
+  .settings(
+    skip / publish := true,
+    moduleName := "zio-deriving-docs",
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+  )
+  .enablePlugins(WebsitePlugin)
