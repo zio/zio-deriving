@@ -4,17 +4,17 @@ import zio.deriving._
 
 object ShapelyTestExamples {
   sealed trait Gaz
-  case class Foo(s: String) extends Gaz
+  case class Foo(s: String)              extends Gaz
   case class Bar(txt: String, num: Long) extends Gaz
-  case class Baz() extends Gaz
-  case object Car extends Gaz
+  case class Baz()                       extends Gaz
+  case object Car                        extends Gaz
 
   sealed trait Poly[+A]
   case class PolyFoo(s: String, i: Int) extends Poly[Int]
-  case class PolyBar() extends Poly[Unit]
+  case class PolyBar()                  extends Poly[Unit]
 
   sealed abstract class ATree
-  final case class Leaf(value: String) extends ATree
+  final case class Leaf(value: String)        extends ATree
   final case class Branch(roots: List[ATree]) extends ATree
 
   // a typeclass that doesn't do anything, but shows how Shapely can be used to
@@ -22,9 +22,9 @@ object ShapelyTestExamples {
   trait Nuthin[A] { self =>
     def xmap[B](f: A => B, g: B => A): Nuthin[B] = self.asInstanceOf[Nuthin[B]]
   }
-  object Nuthin {
+  object Nuthin   {
     def derived[A, B](implicit S: Shapely[A, B], B: Nuthin[B]): Nuthin[A] = B.xmap(S.from, S.to)
-    private def nuthin[A] = new Nuthin[A]{}
+    private def nuthin[A]                                                 = new Nuthin[A] {}
 
     implicit val string: Nuthin[String] = nuthin
 
@@ -39,7 +39,13 @@ object ShapelyTestExamples {
       nuthin
     }
 
-    implicit def sealedtrait2[A, A1 <: A, A2 <: A](implicit M: Meta[A], M1: Meta[A1], A1: Lazy[Nuthin[A1]], M2: Meta[A2], A2: Lazy[Nuthin[A2]]): Nuthin[SealedTrait2[A, A1, A2]] = {
+    implicit def sealedtrait2[A, A1 <: A, A2 <: A](implicit
+      M: Meta[A],
+      M1: Meta[A1],
+      A1: Lazy[Nuthin[A1]],
+      M2: Meta[A2],
+      A2: Lazy[Nuthin[A2]]
+    ): Nuthin[SealedTrait2[A, A1, A2]] = {
       assert(A1.value != null && A2.value != null)
       nuthin
     }
@@ -56,7 +62,7 @@ object ShapelyTestExamples {
   // }
   object ATree {
     implicit lazy val nuthin: Nuthin[ATree] = {
-      implicit def leaf: Nuthin[Leaf] = Nuthin.derived
+      implicit def leaf: Nuthin[Leaf]     = Nuthin.derived
       implicit def branch: Nuthin[Branch] = Nuthin.derived
       Nuthin.derived
     }
@@ -83,19 +89,15 @@ class ShapelyTest extends junit.framework.TestCase {
     assertRoundtrip(Car)
   }
 
-  def testSealedTrait = {
+  def testSealedTrait =
     assertRoundtrip(Foo("hello"): Gaz)
-  }
 
-  def testPolyCaseClass = {
+  def testPolyCaseClass =
     assertRoundtrip(PolyFoo("hello", 1))
-  }
 
-  def testPolySealedTrait = {
+  def testPolySealedTrait =
     assertRoundtrip(PolyFoo("hello", 1): Poly[Any])
-  }
 
-  def testRecursive = {
+  def testRecursive =
     assertRoundtrip(Branch(List(Leaf("hello"), Leaf("world"))): ATree)
-  }
 }

@@ -37,7 +37,7 @@ trait Derivable[F[_]] extends DerivableGenerated[F] {
 // - identity: `fa == xmap(fa)(id, id)`
 // - composition: `xmap(xmap(fa, f1, g1), f2, g2) == xmap(fa, f2 . f1, g1 . g2)`
 trait XFunctor[F[_]] {
-  def xmap[A, B](fa: =>F[A])(f: A => B, g: B => A): F[B]
+  def xmap[A, B](fa: => F[A])(f: A => B, g: B => A): F[B]
 }
 
 // Laws:
@@ -45,9 +45,9 @@ trait XFunctor[F[_]] {
 // - identity: `fa == fmap(fa)(id)`
 // - composition: `fmap(fmap(fa, f1), f2) == fmap(fa, f2 . f1)`
 trait Covariant[F[_]] extends XFunctor[F] {
-  final def widen[A, B](fa: =>F[A])(implicit E: A <:< B): F[B] = fmap(fa)(E.apply)
-  final override def xmap[A, B](fa: =>F[A])(f: A => B, g: B => A): F[B] = fmap(fa)(f)
-  def fmap[A, B](fa: =>F[A])(f: A => B): F[B]
+  final def widen[A, B](fa: => F[A])(implicit E: A <:< B): F[B]          = fmap(fa)(E.apply)
+  final override def xmap[A, B](fa: => F[A])(f: A => B, g: B => A): F[B] = fmap(fa)(f)
+  def fmap[A, B](fa: => F[A])(f: A => B): F[B]
 }
 
 // Laws:
@@ -55,9 +55,9 @@ trait Covariant[F[_]] extends XFunctor[F] {
 // - identity: `fa == contramap(fa)(id)`
 // - composition: `contramap(contramap(fa, f1), f2) == contramap(fa, f2 . f1)`
 trait Contravariant[F[_]] extends XFunctor[F] {
-  final def narrow[A, B](fa: =>F[B])(implicit E: A <:< B): F[A] = contramap(fa)(E.apply)
-  final override def xmap[A, B](fa: =>F[A])(f: A => B, g: B => A): F[B] = contramap(fa)(g)
-  def contramap[A, B](fa: =>F[A])(f: B => A): F[B]
+  final def narrow[A, B](fa: => F[B])(implicit E: A <:< B): F[A]         = contramap(fa)(E.apply)
+  final override def xmap[A, B](fa: => F[A])(f: A => B, g: B => A): F[B] = contramap(fa)(g)
+  def contramap[A, B](fa: => F[A])(f: B => A): F[B]
 }
 
 // c.f. Applicative / Divisible
@@ -66,7 +66,7 @@ trait Contravariant[F[_]] extends XFunctor[F] {
 //
 // - associativity: `align(align(fa, fb), fc) == align(fa, align(fb, fc))`
 trait Align[F[_]] {
-  def align[A, B](fa: =>F[A], fb: =>F[B]): F[(A, B)]
+  def align[A, B](fa: => F[A], fb: => F[B]): F[(A, B)]
 }
 
 // c.f. Decidable / Alt
@@ -75,5 +75,5 @@ trait Align[F[_]] {
 //
 // - associativity: `decide(decide(fa, fb), fc) == decide(fa, decide(fb, fc))`
 trait Decide[F[_]] {
-  def decide[A, B](fa: =>F[A], fb: =>F[B]): F[Either[A, B]]
+  def decide[A, B](fa: => F[A], fb: => F[B]): F[Either[A, B]]
 }
