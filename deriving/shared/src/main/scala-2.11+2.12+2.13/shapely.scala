@@ -1,6 +1,6 @@
 package zio.deriving
 
-import scala.language.experimental.macros
+//import scala.language.experimental.macros
 
 private[deriving] trait ShapelyCompat {
   this: Shapely.type =>
@@ -26,8 +26,8 @@ private[deriving] object ShapelyMacro {
     val result =
       if (fields.isEmpty) {
         val tcons = c.mirror.staticClass(s"_root_.zio.deriving.CaseClass0")
-        val B = tq"$tcons[$A]"
-        val cons =
+        val B     = tq"$tcons[$A]"
+        val cons  =
           if (A.typeSymbol.isModuleClass) q"${A.termSymbol}"
           else q"${A.typeSymbol.companion}()"
         q"""new _root_.zio.deriving.Shapely[$A, $B] {
@@ -35,10 +35,10 @@ private[deriving] object ShapelyMacro {
                 override def from(b: $B): $A = $cons
               }"""
       } else {
-        val tcons = c.mirror.staticClass(s"_root_.zio.deriving.CaseClass${fields.length}")
-        val tparams = fields.map { m => m.typeSignatureIn(A).resultType }
-        val B = tq"$tcons[$A , ..$tparams]"
-        val to_getters = fields.map { f => q"a.${f.name.toTermName}" }
+        val tcons        = c.mirror.staticClass(s"_root_.zio.deriving.CaseClass${fields.length}")
+        val tparams      = fields.map(m => m.typeSignatureIn(A).resultType)
+        val B            = tq"$tcons[$A , ..$tparams]"
+        val to_getters   = fields.map(f => q"a.${f.name.toTermName}")
         val from_getters = (1 to fields.length).map { i =>
           val getter = TermName(s"_$i")
           q"b.$getter"
@@ -50,15 +50,15 @@ private[deriving] object ShapelyMacro {
               }"""
       }
 
-    //println(result)
-    //println(scala.util.Try(c.typecheck(result)))
+    // println(result)
+    // println(scala.util.Try(c.typecheck(result)))
     c.Expr[Shapely[A, B]](result)
   }
 
   def genSealedTrait[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Expr[Shapely[A, B]] = {
     import c.universe._
 
-    val A = c.weakTypeOf[A]
+    val A   = c.weakTypeOf[A]
     val cls = A.typeSymbol.asClass
 
     if (!cls.isSealed)
@@ -91,18 +91,16 @@ private[deriving] object ShapelyMacro {
         }
 
     val sealedtrait_cls = c.mirror.staticClass(s"_root_.zio.deriving.SealedTrait${parts.length}")
-    val sealedtrait = appliedType(sealedtrait_cls, A :: parts) // == B.typeSymbol.asClass
+    val sealedtrait     = appliedType(sealedtrait_cls, A :: parts) // == B.typeSymbol.asClass
 
-    val to_matchers = parts.zipWithIndex.map {
-      case (tp, i) =>
-        val cons = c.mirror.staticClass(s"_root_.zio.deriving.SealedTrait._${i + 1}")
-        cq"p : $tp => ${cons.companion}.apply(p)"
+    val to_matchers = parts.zipWithIndex.map { case (tp, i) =>
+      val cons = c.mirror.staticClass(s"_root_.zio.deriving.SealedTrait._${i + 1}")
+      cq"p : $tp => ${cons.companion}.apply(p)"
     }
 
-    val from_matchers = parts.zipWithIndex.map {
-      case (_, i) =>
-        val uncons = c.mirror.staticClass(s"_root_.zio.deriving.SealedTrait._${i + 1}")
-        cq"${uncons.companion}(p) => p"
+    val from_matchers = parts.zipWithIndex.map { case (_, i) =>
+      val uncons = c.mirror.staticClass(s"_root_.zio.deriving.SealedTrait._${i + 1}")
+      cq"${uncons.companion}(p) => p"
     }
 
     val result =
@@ -111,8 +109,8 @@ private[deriving] object ShapelyMacro {
               override def from(b: $sealedtrait): $A = b match { case ..$from_matchers }
             }"""
 
-    //println(result)
-    //println(scala.util.Try(c.typecheck(result)))
+    // println(result)
+    // println(scala.util.Try(c.typecheck(result)))
     c.Expr(result)
   }
 }
