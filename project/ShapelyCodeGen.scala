@@ -1,25 +1,26 @@
 object ShapelyCodeGen {
   val product_arity = 64
-  val sum_arity = 64
+  val sum_arity     = 64
 
   def data: String = {
-    val caseclasses = (1 to product_arity).map { i =>
-      val tparams = (1 to i).map(p => s"A$p").mkString(", ")
-      val defns = (1 to i).map(p => s"_$p: A$p").mkString(", ")
-      val tuple = (1 to i).map(p => s"_$p").mkString(", ")
-      val untuple = (1 to i).map(p => s"t._$p").mkString(", ")
+    val caseclasses       = (1 to product_arity).map { i =>
+      val tparams     = (1 to i).map(p => s"A$p").mkString(", ")
+      val defns       = (1 to i).map(p => s"_$p: A$p").mkString(", ")
+      val tuple       = (1 to i).map(p => s"_$p").mkString(", ")
+      val untuple     = (1 to i).map(p => s"t._$p").mkString(", ")
       // scala 2 is limited to tuples of arity 22. We could generate this for
       // scala 3 but we'd rather not have a different API.
-      val withs =
+      val withs       =
         if (i > 22) s""
         else s"with Product${i}[$tparams] "
-      val tupler =
+      val tupler      =
         if (i > 22) ""
         else s"  def tuple: Tuple${i}[$tparams] = Tuple$i($tuple)\n"
-      val value = (1 to i).map(p => s"case ${p - 1} => _$p")
+      val value       = (1 to i).map(p => s"case ${p - 1} => _$p")
       val body_object =
         if (i > 22) ""
-        else s"object CaseClass$i { def untuple[A, $tparams](t: Tuple$i[$tparams]): CaseClass$i[A, $tparams] = CaseClass$i($untuple) }"
+        else
+          s"object CaseClass$i { def untuple[A, $tparams](t: Tuple$i[$tparams]): CaseClass$i[A, $tparams] = CaseClass$i($untuple) }"
       s"""final case class CaseClass$i[A, $tparams]($defns) extends CaseClass[A] $withs{
          |  override def value(i: Int): Any = (i: @switch) match {
          |    ${value.mkString("\n    ")}
@@ -29,36 +30,37 @@ object ShapelyCodeGen {
          |}
          |$body_object""".stripMargin
     }
-    val sealedtraits = (1 to sum_arity).map { i =>
-      val tparams = (1 to i).map(p => s"A$p <: A").mkString(", ")
-      val tparams_ = (1 to i).map(p => s"A$p").mkString(", ")
-      val either = (1 until i).foldRight(s"A$i" + ("]" * (i - 1)))((e, acc) => s"Either[A$e, $acc")
-      def rights(pp: Int, s: String): String = if (pp <= 0) s else rights(pp - 1, s"Right($s)")
-      def either_cons(p: Int, splice: String): String = if (p == i) rights(p - 1, splice) else rights(p - 1, s"Left($splice)")
-      val toEithers = (1 to i).map { p => s"""case SealedTrait._$p(v) => ${either_cons(p, "v")}""" }
-      val fromEithers = (1 to i).map { p => s"""case ${either_cons(p, s"v")} => SealedTrait._$p(v)""" }
+    val sealedtraits      = (1 to sum_arity).map { i =>
+      val tparams                                     = (1 to i).map(p => s"A$p <: A").mkString(", ")
+      val tparams_                                    = (1 to i).map(p => s"A$p").mkString(", ")
+      val either                                      = (1 until i).foldRight(s"A$i" + ("]" * (i - 1)))((e, acc) => s"Either[A$e, $acc")
+      def rights(pp: Int, s: String): String          = if (pp <= 0) s else rights(pp - 1, s"Right($s)")
+      def either_cons(p: Int, splice: String): String =
+        if (p == i) rights(p - 1, splice) else rights(p - 1, s"Left($splice)")
+      val toEithers                                   = (1 to i).map(p => s"""case SealedTrait._$p(v) => ${either_cons(p, "v")}""")
+      val fromEithers                                 = (1 to i).map(p => s"""case ${either_cons(p, s"v")} => SealedTrait._$p(v)""")
 
       // the either convertors are very inefficient and should only be used for small arity
       val body_object =
         if (i > 12) ""
         else s"""
-       |object SealedTrait$i {
-       |  def either[A, $tparams](st: SealedTrait$i[A, $tparams_]): $either = st match {
-       |    ${toEithers.mkString("\n    ")}
-       |  }
-       |
-       |  def uneither[A, $tparams](e: $either): SealedTrait$i[A, $tparams_] = e match {
-       |    ${fromEithers.mkString("\n    ")}
-       |  }
-       |}""".stripMargin
+                |object SealedTrait$i {
+                |  def either[A, $tparams](st: SealedTrait$i[A, $tparams_]): $either = st match {
+                |    ${toEithers.mkString("\n    ")}
+                |  }
+                |
+                |  def uneither[A, $tparams](e: $either): SealedTrait$i[A, $tparams_] = e match {
+                |    ${fromEithers.mkString("\n    ")}
+                |  }
+                |}""".stripMargin
 
       s"""sealed trait SealedTrait$i[A, $tparams] extends SealedTrait[A]$body_object"""
     }
     // this encoding idea thanks to Georgi Krastev
     val sealedtrait_cases = (1 to sum_arity).map { i =>
-      val tparams = (1 to sum_arity).map(p => s"A$p <: A").mkString(", ")
+      val tparams  = (1 to sum_arity).map(p => s"A$p <: A").mkString(", ")
       val tparams_ = (1 to sum_arity).map(p => s"A$p")
-      val parents = (i to sum_arity).map { p =>
+      val parents  = (i to sum_arity).map { p =>
         val ptparams = tparams_.take(p).mkString(", ")
         s"""SealedTrait$p[A, $ptparams]"""
       }.mkString(" with ")
@@ -88,23 +90,27 @@ object ShapelyCodeGen {
   }
 
   def compat: String = {
-    val caseclasses = (1 to product_arity).map { i =>
-      val tparams = (1 to i).map(p => s"A$p").mkString(", ")
+    val caseclasses  = (1 to product_arity).map { i =>
+      val tparams          = (1 to i).map(p => s"A$p").mkString(", ")
       def tcons(s: String) = if (i == 1) s"Tuple1[$s]" else s"($s)"
 
-      s"""  implicit def caseclass$i[A <: Product, $tparams](implicit A: Mirror.ProductOf[A], ev1: A.MirroredElemTypes =:= ${tcons(tparams)}, S: Mirror.ProductOf[CaseClass$i[A, $tparams]]): Shapely[A, CaseClass$i[A, $tparams]] = new Shapely[A, CaseClass$i[A, $tparams]] {
+      s"""  implicit def caseclass$i[A <: Product, $tparams](implicit A: Mirror.ProductOf[A], ev1: A.MirroredElemTypes =:= ${tcons(
+          tparams
+        )}, S: Mirror.ProductOf[CaseClass$i[A, $tparams]]): Shapely[A, CaseClass$i[A, $tparams]] = new Shapely[A, CaseClass$i[A, $tparams]] {
          |    def to(a: A): CaseClass$i[A, $tparams] = S.fromProduct(a)
          |    def from(s: CaseClass$i[A, $tparams]): A = A.fromProduct(s)
          |  }""".stripMargin
     }
     val sealedtraits = (1 to sum_arity).map { i =>
-      val tparams = (1 to i).map(p => s"A$p <: A").mkString(", ")
-      val tparams_ = (1 to i).map(p => s"A$p").mkString(", ")
+      val tparams          = (1 to i).map(p => s"A$p <: A").mkString(", ")
+      val tparams_         = (1 to i).map(p => s"A$p").mkString(", ")
       def tcons(i: String) = if (i == 1) s"Tuple1[$i]" else s"($i)"
 
       val to_matchers = (1 to i).map(p => s"  case ${p - 1} => SealedTrait._$p(a.asInstanceOf[A$p])")
 
-      s"""  implicit def sealedtrait$i[A, $tparams](implicit A: Mirror.SumOf[A], ev: A.MirroredElemTypes =:= ${tcons(tparams_)}): Shapely[A, SealedTrait$i[A, $tparams_]] = new Shapely[A, SealedTrait$i[A, $tparams_]] {
+      s"""  implicit def sealedtrait$i[A, $tparams](implicit A: Mirror.SumOf[A], ev: A.MirroredElemTypes =:= ${tcons(
+          tparams_
+        )}): Shapely[A, SealedTrait$i[A, $tparams_]] = new Shapely[A, SealedTrait$i[A, $tparams_]] {
          |    def to(a: A): SealedTrait$i[A, $tparams_] = A.ordinal(a) match {
          |    ${to_matchers.mkString("\n    ")}
          |    }
@@ -112,36 +118,36 @@ object ShapelyCodeGen {
          |  }""".stripMargin
     }
     s"""package zio.deriving
-         |
-         |import deriving.Mirror
-         |
-         |private[deriving] trait ShapelyCompat { this: Shapely.type =>
-         |
-         |  implicit def caseclass0[A <: Product](implicit A: Mirror.ProductOf[A], ev: A.MirroredElemTypes =:= EmptyTuple): Shapely[A, CaseClass0[A]] = new Shapely[A, CaseClass0[A]] {
-         |    def to(a: A): CaseClass0[A] = CaseClass0[A]()
-         |    def from(s: CaseClass0[A]): A = A.fromProduct(s)
-         |  }
-         |
-         |${caseclasses.mkString("\n\n")}
-         |
-         |${sealedtraits.mkString("\n\n")}
-         |
-         |}""".stripMargin
+       |
+       |import deriving.Mirror
+       |
+       |private[deriving] trait ShapelyCompat { this: Shapely.type =>
+       |
+       |  implicit def caseclass0[A <: Product](implicit A: Mirror.ProductOf[A], ev: A.MirroredElemTypes =:= EmptyTuple): Shapely[A, CaseClass0[A]] = new Shapely[A, CaseClass0[A]] {
+       |    def to(a: A): CaseClass0[A] = CaseClass0[A]()
+       |    def from(s: CaseClass0[A]): A = A.fromProduct(s)
+       |  }
+       |
+       |${caseclasses.mkString("\n\n")}
+       |
+       |${sealedtraits.mkString("\n\n")}
+       |
+       |}""".stripMargin
   }
 
   def derivable: String = {
-    val caseclasses = (3 to product_arity).map { i =>
+    val caseclasses  = (3 to product_arity).map { i =>
       val tparams = (1 to i).map(p => s"A$p").mkString(", ")
-      val Fs = (1 to i).map(p => s"F$p: Lazy[F[A$p]]").mkString(", ")
+      val Fs      = (1 to i).map(p => s"F$p: Lazy[F[A$p]]").mkString(", ")
 
       if (i % 2 == 0) {
-        val left_Fs = (1 to i / 2).map(p => s"F$p").mkString(", ")
-        val left = s"""caseclass${i / 2}(X, A, $left_Fs)"""
+        val left_Fs     = (1 to i / 2).map(p => s"F$p").mkString(", ")
+        val left        = s"""caseclass${i / 2}(X, A, $left_Fs)"""
         val left_cons_f = (1 to i / 2).map(p => s"a._$p").mkString(", ")
         val left_cons_g = (1 to i / 2).map(p => s"c._$p").mkString(", ")
 
-        val right_Fs = ((1 + i / 2) to i).map(p => s"F$p").mkString(", ")
-        val right = s"""caseclass${i / 2}(X, A, $right_Fs)"""
+        val right_Fs     = ((1 + i / 2) to i).map(p => s"F$p").mkString(", ")
+        val right        = s"""caseclass${i / 2}(X, A, $right_Fs)"""
         val right_cons_f = (1 to i / 2).map(p => s"b._$p").mkString(", ")
         val right_cons_g = ((1 + i / 2) to i).map(p => s"c._$p").mkString(", ")
 
@@ -151,8 +157,8 @@ object ShapelyCodeGen {
            |      c => (CaseClass${i / 2}($left_cons_g), CaseClass${i / 2}($right_cons_g))
            |    )""".stripMargin
       } else {
-        val left_Fs = (1 to i - 1).map(p => s"F$p").mkString(", ")
-        val left = s"""caseclass${i - 1}(X, A, $left_Fs)"""
+        val left_Fs     = (1 to i - 1).map(p => s"F$p").mkString(", ")
+        val left        = s"""caseclass${i - 1}(X, A, $left_Fs)"""
         val left_cons_f = (1 to i - 1).map(p => s"a._$p").mkString(", ")
         val left_cons_g = (1 to i - 1).map(p => s"c._$p").mkString(", ")
 
@@ -171,9 +177,9 @@ object ShapelyCodeGen {
       // (consider an Eq implementation that may expect to shortcut false from
       // the left only), but produces more code and is slower to compile
       // (especially in Scala 3).
-      val tparams = (1 to i).map(p => s"A$p <: A").mkString(", ")
+      val tparams  = (1 to i).map(p => s"A$p <: A").mkString(", ")
       val tparams_ = (1 to i).map(p => s"A$p").mkString(", ")
-      val Fs = (1 to i).map(p => s"F$p: Lazy[F[A$p]]").mkString(", ")
+      val Fs       = (1 to i).map(p => s"F$p: Lazy[F[A$p]]").mkString(", ")
 
       // the casting here works because doing it explicitly we extract and
       // apply using the same data type... the SealedTraitX hierarchy hides
@@ -182,29 +188,29 @@ object ShapelyCodeGen {
       //
       // not only is this faster at runtime, but it also speeds up the
       // compile.
-      val left_Fs = (1 to i - 1).map(p => s"F$p").mkString(", ")
-      val left = s"""sealedtrait${i - 1}(X, D, $left_Fs)"""
+      val left_Fs       = (1 to i - 1).map(p => s"F$p").mkString(", ")
+      val left          = s"""sealedtrait${i - 1}(X, D, $left_Fs)"""
       val left_tparams_ = (1 to i - 1).map(p => s"A$p").mkString(", ")
 
       s"""  implicit def sealedtrait$i[A, $tparams](implicit X: XFunctor[F], D: Decide[F], $Fs): F[SealedTrait$i[A, $tparams_]] =
-           |    X.xmap(D.decide($left, F${i}.value))(
-           |      {
-           |        case Left(v) => v.asInstanceOf[SealedTrait$i[A, $tparams_]]
-           |        case Right(v) => SealedTrait._$i(v)
-           |      },
-           |      {
-           |        case SealedTrait._$i(v) => Right(v)
-           |        case other => Left(other.asInstanceOf[SealedTrait${i - 1}[A, $left_tparams_]])
-           |      }
-           |    )""".stripMargin
+         |    X.xmap(D.decide($left, F${i}.value))(
+         |      {
+         |        case Left(v) => v.asInstanceOf[SealedTrait$i[A, $tparams_]]
+         |        case Right(v) => SealedTrait._$i(v)
+         |      },
+         |      {
+         |        case SealedTrait._$i(v) => Right(v)
+         |        case other => Left(other.asInstanceOf[SealedTrait${i - 1}[A, $left_tparams_]])
+         |      }
+         |    )""".stripMargin
 
     }
 
     val tuples = (3 to 22).map { i =>
-      val As = (1 to i).map(p => s"A$p").mkString(", ")
-      val Fs = (1 to i).map(p => s"F$p: Lazy[F[A$p]]").mkString(", ")
+      val As  = (1 to i).map(p => s"A$p").mkString(", ")
+      val Fs  = (1 to i).map(p => s"F$p: Lazy[F[A$p]]").mkString(", ")
       val Fs_ = (1 to i).map(p => s"F$p").mkString(", ")
-      val vs = (1 to i).map(p => s"v._$p").mkString(", ")
+      val vs  = (1 to i).map(p => s"v._$p").mkString(", ")
 
       s"""  implicit def tuple$i[$As](implicit X: XFunctor[F], A: Align[F], $Fs): F[Tuple$i[$As]] = {
          |    val from = (v: CaseClass$i[Nothing, $As]) => Tuple$i($vs)

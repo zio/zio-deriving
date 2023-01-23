@@ -10,13 +10,13 @@ object MetaTestExamples {
   sealed trait Gaz
   object Gaz {
     @field("case class Foo")
-    case class Foo(@field("case class field s") s: String) extends Gaz
+    case class Foo(@field("case class field s") s: String)                                                 extends Gaz
     @field("case class Bar")
     case class Bar(@field("case class field txt") txt: String, @field("case class field <+>") `<+>`: Long) extends Gaz
     @field("case class |++|")
-    case class |++|() extends Gaz
+    case class |++|()                                                                                      extends Gaz
     @field("case object Car")
-    case object Car extends Gaz
+    case object Car                                                                                        extends Gaz
   }
 }
 import MetaTestExamples._
@@ -54,7 +54,10 @@ class MetaTest extends junit.framework.TestCase {
   def testFieldAnnotations(): Unit = {
     assertEquals(Nil, Meta[Gaz].fieldAnnotations.toList)
     assertEquals(List(List(field("case class field s"))), Meta[Foo].fieldAnnotations.toList)
-    assertEquals(List(List(field("case class field txt")), List(field("case class field <+>"))), Meta[Bar].fieldAnnotations.toList)
+    assertEquals(
+      List(List(field("case class field txt")), List(field("case class field <+>"))),
+      Meta[Bar].fieldAnnotations.toList
+    )
     assertEquals(Nil, Meta[|++|].fieldAnnotations.toList)
     assertEquals(Nil, Meta[Car.type].fieldAnnotations.toList)
   }

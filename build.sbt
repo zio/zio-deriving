@@ -1,10 +1,10 @@
 organization := "dev.zio"
-name := "zio-deriving"
+name         := "zio-deriving"
 
 // there's nothing stopping 2.10 being supported except the need to rewrite all
 // the macros using the 2.10 API... and capping the codegen to an arity of 22.
 ThisBuild / crossScalaVersions := List("3.1.1", "2.13.8", "2.12.15", "2.11.12")
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion       := "2.13.8"
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -15,10 +15,10 @@ scalacOptions ++= Seq(
 Compile / console / scalacOptions -= "-Ywarn-unused"
 
 Compile / unmanagedSourceDirectories ++= {
-  val dir = (Compile / scalaSource).value.getPath
+  val dir                  = (Compile / scalaSource).value.getPath
   val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
-  val specific = (major, minor) match {
-    case (3, _) => file(s"$dir-2.13+3.x") :: Nil
+  val specific             = (major, minor) match {
+    case (3, _)  => file(s"$dir-2.13+3.x") :: Nil
     case (2, 13) => file(s"$dir-2.11+2.12+2.13") :: file(s"$dir-2.13+3.x") :: Nil
     case (2, 12) => file(s"$dir-2.11+2.12+2.13") :: file(s"$dir-2.11+2.12") :: Nil
     case (2, 11) => file(s"$dir-2.11+2.12+2.13") :: file(s"$dir-2.11+2.12") :: Nil
@@ -34,25 +34,28 @@ libraryDependencies ++= Seq(
 )
 crossPaths := false // https://github.com/sbt/junit-interface/issues/35
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
-fork := true
+fork       := true
 
 libraryDependencies ++= {
-  if (scalaVersion.value.startsWith("3.")) Seq(
-    "org.scala-lang" % "scala3-compiler_3" % scalaVersion.value % "provided"
-  ) else Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided"
-  )
+  if (scalaVersion.value.startsWith("3."))
+    Seq(
+      "org.scala-lang" % "scala3-compiler_3" % scalaVersion.value % "provided"
+    )
+  else
+    Seq(
+      "org.scala-lang" % "scala-reflect"     % scalaVersion.value % "provided"
+    )
 }
 
 Compile / sourceManaged := {
-  val dir = (Compile / sourceManaged).value
+  val dir                  = (Compile / sourceManaged).value
   val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
   dir / s"scala-${major}.${minor}"
 }
 
 Compile / sourceGenerators += Def.task {
-  val dir = (Compile / sourceManaged).value
-  val data = dir / "zio"/ "deriving" / "data.scala"
+  val dir       = (Compile / sourceManaged).value
+  val data      = dir / "zio" / "deriving" / "data.scala"
   IO.write(data, ShapelyCodeGen.data)
   val derivable = dir / "zio" / "deriving" / "derivable.scala"
   IO.write(derivable, ShapelyCodeGen.derivable)
@@ -63,7 +66,7 @@ Compile / sourceGenerators += Def.task {
   val Some((major, _)) = CrossVersion.partialVersion(scalaVersion.value)
   if (major < 3) Nil
   else {
-    val dir = (Compile / sourceManaged).value
+    val dir  = (Compile / sourceManaged).value
     val file = dir / "zio" / "deriving" / "compat.scala"
     IO.write(file, ShapelyCodeGen.compat)
     Seq(file)
@@ -71,8 +74,27 @@ Compile / sourceGenerators += Def.task {
 }.taskValue
 
 Test / sourceGenerators += Def.task {
-  val dir = (Compile / sourceManaged).value
+  val dir   = (Compile / sourceManaged).value
   val enums = dir / "wheels" / "enums" / "GeneratedEnums.scala"
   IO.write(enums, ExamplesCodeGen.enums)
   Seq(enums)
 }.taskValue
+
+lazy val docs = project
+  .in(file("zio-deriving-docs"))
+  .settings(
+    moduleName                                 := "zio-deriving-docs",
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+    projectName                                := "ZIO Deriving",
+    mainModuleName                             := moduleName.value,
+    projectStage                               := ProjectStage.Development,
+    docsPublishBranch                          := "main",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(),
+    checkArtifactBuildProcessWorkflowStep      := None
+  )
+  .enablePlugins(WebsitePlugin)
+
+addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
+addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
+addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")

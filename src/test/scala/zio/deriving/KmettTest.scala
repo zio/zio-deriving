@@ -12,14 +12,14 @@ object KmettExamples {
     }
 
     implicit val xfunctor: Contravariant[Ordering] = new Contravariant[Ordering] {
-      def contramap[A, B](fa_ : =>Ordering[A])(f: B => A): Ordering[B] = new Ordering[B] {
-        lazy val fa = fa_
+      def contramap[A, B](fa_ : => Ordering[A])(f: B => A): Ordering[B] = new Ordering[B] {
+        lazy val fa                  = fa_
         def compare(x: B, y: B): Int = fa.compare(f(x), f(y))
       }
     }
 
     implicit val align: Align[Ordering] = new Align[Ordering] {
-      def align[A, B](fa_ : =>Ordering[A], fb_ : =>Ordering[B]): Ordering[(A, B)] = new Ordering[(A, B)] {
+      def align[A, B](fa_ : => Ordering[A], fb_ : => Ordering[B]): Ordering[(A, B)] = new Ordering[(A, B)] {
         lazy val fa = fa_
         lazy val fb = fb_
 
@@ -32,36 +32,37 @@ object KmettExamples {
     }
 
     implicit val decide: Decide[Ordering] = new Decide[Ordering] {
-      def decide[A, B](fa_ : =>Ordering[A], fb_ : =>Ordering[B]): Ordering[Either[A, B]] = new Ordering[Either[A, B]] {
-        lazy val fa = fa_
-        lazy val fb = fb_
+      def decide[A, B](fa_ : => Ordering[A], fb_ : => Ordering[B]): Ordering[Either[A, B]] =
+        new Ordering[Either[A, B]] {
+          lazy val fa = fa_
+          lazy val fb = fb_
 
-        def compare(x: Either[A, B], y: Either[A, B]): Int = (x, y) match {
-          case (Left(xa), Left(ya)) => fa.compare(xa, ya)
-          case (Right(xb), Right(yb)) => fb.compare(xb, yb)
-          case (Left(_), Right(_)) => -1
-          case (Right(_), Left(_)) => 1
+          def compare(x: Either[A, B], y: Either[A, B]): Int = (x, y) match {
+            case (Left(xa), Left(ya))   => fa.compare(xa, ya)
+            case (Right(xb), Right(yb)) => fb.compare(xb, yb)
+            case (Left(_), Right(_))    => -1
+            case (Right(_), Left(_))    => 1
+          }
         }
-      }
     }
   }
 
-  trait Equal[A]  {
+  trait Equal[A] {
     // type parameter is in contravariant (parameter) position
     def equal(a1: A, a2: A): Boolean
   }
-  object Equal extends Derivable[Equal] {
+  object Equal                                  extends Derivable[Equal] {
     implicit val int: Equal[Int] = new Equal[Int] {
       override def equal(a1: Int, a2: Int) = a1 == a2
     }
 
     implicit def list[A](implicit A: Equal[A]): Equal[List[A]] = new Equal[List[A]] {
       @tailrec override def equal(as1: List[A], as2: List[A]) = (as1, as2) match {
-        case (Nil, Nil) => true
+        case (Nil, Nil)                     => true
         case (a1 :: a1_tail, a2 :: a2_tail) =>
           if (!A.equal(a1, a2)) false
           else equal(a1_tail, a2_tail)
-        case _ => false
+        case _                              => false
       }
     }
 
@@ -70,33 +71,33 @@ object KmettExamples {
     }
 
     implicit val xfunctor: Contravariant[Equal] = new Contravariant[Equal] {
-      override def contramap[A, B](fa_ : =>Equal[A])(f: B => A) = new Equal[B] {
-        lazy val fa = fa_
+      override def contramap[A, B](fa_ : => Equal[A])(f: B => A) = new Equal[B] {
+        lazy val fa                      = fa_
         override def equal(b1: B, b2: B) = fa.equal(f(b1), f(b2))
       }
     }
 
     implicit val align: Align[Equal] = new Align[Equal] {
-      override def align[A, B](fa_ : =>Equal[A], fb_ : =>Equal[B]) = new Equal[(A, B)] {
-        lazy val fa = fa_
-        lazy val fb = fb_
+      override def align[A, B](fa_ : => Equal[A], fb_ : => Equal[B]) = new Equal[(A, B)] {
+        lazy val fa                                  = fa_
+        lazy val fb                                  = fb_
         override def equal(ab1: (A, B), ab2: (A, B)) = fa.equal(ab1._1, ab2._1) && fb.equal(ab1._2, ab2._2)
       }
     }
 
     implicit val decide: Decide[Equal] = new Decide[Equal] {
-      def decide[A, B](fa_ : =>Equal[A], fb_ : =>Equal[B]): Equal[Either[A, B]] = new Equal[Either[A, B]] {
-        lazy val fa = fa_
-        lazy val fb = fb_
+      def decide[A, B](fa_ : => Equal[A], fb_ : => Equal[B]): Equal[Either[A, B]] = new Equal[Either[A, B]] {
+        lazy val fa                                              = fa_
+        lazy val fb                                              = fb_
         override def equal(ab1: Either[A, B], ab2: Either[A, B]) = (ab1, ab2) match {
-          case (Left(a1), Left(a2)) => fa.equal(a1, a2)
+          case (Left(a1), Left(a2))   => fa.equal(a1, a2)
           case (Right(b1), Right(b2)) => fb.equal(b1, b2)
-          case _ => false
+          case _                      => false
         }
       }
     }
   }
-  implicit class EqualOps[A](private val a1: A) extends AnyVal {
+  implicit class EqualOps[A](private val a1: A) extends AnyVal           {
     def ===(a2: A)(implicit S: Equal[A]): Boolean = S.equal(a1, a2)
   }
 
@@ -119,31 +120,31 @@ object KmettExamples {
     }
 
     implicit val xfunctor: XFunctor[Default] = new Covariant[Default] {
-      override def fmap[A, B](fa_ : =>Default[A])(f: A => B) = new Default[B] {
-        lazy val fa = fa_
+      override def fmap[A, B](fa_ : => Default[A])(f: A => B) = new Default[B] {
+        lazy val fa          = fa_
         override def default = fa.default match {
           case Left(err) => Left(err)
-          case Right(a) => Right(f(a))
+          case Right(a)  => Right(f(a))
         }
       }
     }
-    implicit val align: Align[Default] = new Align[Default] {
-      override def align[A, B](fa_ : =>Default[A], fb_ : =>Default[B]) = new Default[(A, B)] {
-        lazy val fa = fa_
-        lazy val fb = fb_
+    implicit val align: Align[Default]       = new Align[Default] {
+      override def align[A, B](fa_ : => Default[A], fb_ : => Default[B]) = new Default[(A, B)] {
+        lazy val fa          = fa_
+        lazy val fb          = fb_
         override def default = (fa.default, fb.default) match {
           case (Right(a), Right(b)) => Right((a, b))
-          case (Left(err), _) => Left(err)
-          case (_, Left(err)) => Left(err)
+          case (Left(err), _)       => Left(err)
+          case (_, Left(err))       => Left(err)
         }
       }
     }
-    implicit val decide: Decide[Default] = new Decide[Default] {
-      override def decide[A, B](fa_ : =>Default[A], fb_ : =>Default[B]) = new Default[Either[A, B]] {
-        lazy val fa = fa_
+    implicit val decide: Decide[Default]     = new Decide[Default] {
+      override def decide[A, B](fa_ : => Default[A], fb_ : => Default[B]) = new Default[Either[A, B]] {
+        lazy val fa          = fa_
         override def default = fa.default match {
           case Left(err) => Left(err)
-          case Right(a) => Right(Left(a))
+          case Right(a)  => Right(Left(a))
         }
       }
     }
@@ -154,69 +155,69 @@ object KmettExamples {
     // type parameter is in both covariant and contravariant position (invariant)
     def add(a1: A, a2: A): A
   }
-  object Semigroup extends Derivable[Semigroup] {
+  object Semigroup                                  extends Derivable[Semigroup] {
     implicit val int: Semigroup[Int] = new Semigroup[Int] {
       override def add(a1: Int, a2: Int) = a1 + a2
     }
 
     implicit val xfunctor: XFunctor[Semigroup] = new XFunctor[Semigroup] {
-      override def xmap[A, B](fa_ : =>Semigroup[A])(f: A => B, g: B => A) = new Semigroup[B] {
-        lazy val fa = fa_
+      override def xmap[A, B](fa_ : => Semigroup[A])(f: A => B, g: B => A) = new Semigroup[B] {
+        lazy val fa                    = fa_
         override def add(b1: B, b2: B) = f(fa.add(g(b1), g(b2)))
       }
     }
 
     implicit val align: Align[Semigroup] = new Align[Semigroup] {
-      override def align[A, B](fa_ : =>Semigroup[A], fb_ : =>Semigroup[B]) = new Semigroup[(A, B)] {
-        lazy val fa = fa_
-        lazy val fb = fb_
+      override def align[A, B](fa_ : => Semigroup[A], fb_ : => Semigroup[B]) = new Semigroup[(A, B)] {
+        lazy val fa                                = fa_
+        lazy val fb                                = fb_
         override def add(ab1: (A, B), ab2: (A, B)) = (fa.add(ab1._1, ab2._1), fb.add(ab1._2, ab2._2))
       }
     }
   }
-  implicit class SemigroupOps[A](private val a1: A) extends AnyVal {
+  implicit class SemigroupOps[A](private val a1: A) extends AnyVal               {
     def |+|(a2: A)(implicit S: Semigroup[A]): A = S.add(a1, a2)
   }
 
   sealed trait Parent
-  case class Foo(a: Int, b: Int) extends Parent
-  case class Bar() extends Parent
+  case class Foo(a: Int, b: Int)                                 extends Parent
+  case class Bar()                                               extends Parent
   case class Car(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int) extends Parent
-  case class Dar() extends Parent
-  case class Ear() extends Parent
-  case object Faz extends Parent {
-    implicit val equal: Equal[Faz.type] = Equal.derived
+  case class Dar()                                               extends Parent
+  case class Ear()                                               extends Parent
+  case object Faz                                                extends Parent {
+    implicit val equal: Equal[Faz.type]     = Equal.derived
     implicit val default: Default[Faz.type] = Default.derived
   }
 
   object Parent {
-    implicit val equal: Equal[Parent] = Equal.derived
+    implicit val equal: Equal[Parent]     = Equal.derived
     implicit val default: Default[Parent] = Default.derived
   }
-  object Foo {
-    implicit val equal: Equal[Foo] = Equal.derived
+  object Foo    {
+    implicit val equal: Equal[Foo]         = Equal.derived
     implicit val semigroup: Semigroup[Foo] = Semigroup.derived
-    implicit val default: Default[Foo] = Default.derived
+    implicit val default: Default[Foo]     = Default.derived
   }
-  object Bar {
-    implicit val equal: Equal[Bar] = Equal.derived
+  object Bar    {
+    implicit val equal: Equal[Bar]     = Equal.derived
     implicit val default: Default[Bar] = Default.derived
   }
-  object Car {
-    implicit val equal: Equal[Car] = Equal.derived
+  object Car    {
+    implicit val equal: Equal[Car]     = Equal.derived
     implicit val default: Default[Car] = Default.derived
   }
-  object Dar {
-    implicit val equal: Equal[Dar] = Equal.derived
+  object Dar    {
+    implicit val equal: Equal[Dar]     = Equal.derived
     implicit val default: Default[Dar] = Default.derived
   }
-  object Ear {
-    implicit val equal: Equal[Ear] = Equal.derived
+  object Ear    {
+    implicit val equal: Equal[Ear]     = Equal.derived
     implicit val default: Default[Ear] = Default.derived
   }
 
   sealed abstract class ATree
-  final case class Leaf(value: Int) extends ATree
+  final case class Leaf(value: Int)           extends ATree
   final case class Branch(roots: List[ATree]) extends ATree
 
   // object ATree {
@@ -230,7 +231,7 @@ object KmettExamples {
   // }
   object ATree {
     implicit lazy val equal: Equal[ATree] = {
-      implicit def leaf: Equal[Leaf] = Equal.derived
+      implicit def leaf: Equal[Leaf]     = Equal.derived
       implicit def branch: Equal[Branch] = Equal.derived
       Equal.derived
     }
@@ -245,7 +246,7 @@ object KmettExamples {
   }
 
   sealed trait Dimension
-  case class Cube(x: Double, y: Double, z: Double) extends Dimension
+  case class Cube(x: Double, y: Double, z: Double)                 extends Dimension
   case class Tesseract(x: Double, y: Double, z: Double, t: Double) extends Dimension
 
   object Dimension {
@@ -254,7 +255,7 @@ object KmettExamples {
       derived
     }
   }
-  object Cube {
+  object Cube      {
     implicit val ordering: Ordering[Cube] = {
       import OrderingOrphans._
       derived
