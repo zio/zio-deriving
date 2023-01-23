@@ -22,5 +22,5 @@ final class Lazy[A] private (private[this] var eval: () => A) {
 }
 
 object Lazy extends LazyCompat {
-  def apply[A](a: =>A): Lazy[A] = new Lazy[A](() => a)
+  def apply[A](a: => A): Lazy[A] = new Lazy[A](() => a)
 }
