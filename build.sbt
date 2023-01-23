@@ -83,10 +83,15 @@ Test / sourceGenerators += Def.task {
 lazy val docs = project
   .in(file("zio-deriving-docs"))
   .settings(
-    skip / publish := true,
-    moduleName     := "zio-deriving-docs",
+    moduleName                                 := "zio-deriving-docs",
     scalacOptions -= "-Yno-imports",
-    scalacOptions -= "-Xfatal-warnings"
+    scalacOptions -= "-Xfatal-warnings",
+    projectName                                := "ZIO Deriving",
+    mainModuleName                             := moduleName.value,
+    projectStage                               := ProjectStage.Development,
+    docsPublishBranch                          := "main",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(),
+    checkArtifactBuildProcessWorkflowStep      := None
   )
   .enablePlugins(WebsitePlugin)
 
